@@ -1,25 +1,37 @@
 import logging
 import os
 
-logger = logging.getlogger(__name__)
+logger = logging.getLogger(__name__)
 
-def _get_part_text(text: str, start: int, size: int) -> tuple[str, int]:
-    lst = [',', '.', '!', '?', ':', ';']
-    idx=start
-    idx_s = 0
-    while idx<len(text) and idx < start+size:
-        if text[idx] in lst:
-            idx_s = idx
-        idx+=1
-    if idx_s<len(text)-1:
-        if text[idx_s+1] in lst:
-            for i in range(idx_s-2, start-1, -1):
-                if text[i] in lst:
-                    idx_s = i
-                    break
-    page_text = text[start:idx_s+1]
-    page_size = len(page_text)
-    return page_text, page_size
+def _get_part_text(text: str, start: int, page_size: int) -> tuple[str, int]:
+    end_signs = ",.!:;?"
+    max_end = min(len(text), start + page_size)
+    chunk = text[start:max_end]
+
+    last_good = -1
+    i = 0
+    while i < len(chunk):
+        if chunk[i] in end_signs:
+            while i + 1 < len(chunk) and chunk[i + 1] in end_signs:
+                i += 1
+            seq_end = i
+
+            after_seq = start + seq_end + 1
+            if (
+                after_seq == len(text)
+                or text[after_seq].isspace()
+                or text[after_seq].isalpha()
+            ):
+                last_good = seq_end
+        i += 1
+
+    if last_good != -1:
+        page_text = chunk[: last_good + 1]
+    else:
+        page_text = chunk
+
+    return page_text, len(page_text)
+
 
 def prepare_book(path: str, page_size: int = 1050) -> dict[int, str]:
     try:
