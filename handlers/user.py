@@ -88,4 +88,13 @@ async def process_backward_press(callback: CallbackQuery, book: dict, db: dict):
             )
         )
     await callback.answer()
-    
+
+@user_router.callback_query(
+    lambda x: "/" in x.data and x.data.replace("/", "").isdigit()
+)
+async def process_page_press(callback: CallbackQuery, db: dict):
+    db["users"][callback.from_user.id]["bookmarks"].add(
+        db["users"][callback.from_user.id]["page"]
+    )
+    await callback.answer("Страница добавлена в закладки!")
+
